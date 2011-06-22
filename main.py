@@ -21,7 +21,8 @@ class Friend(db.Model):
 
 class Find(webapp.RequestHandler):
   def post(self):
-    datatmp.put()
+    if(datatmp):
+        datatmp.put()
     self.redirect('/home')
       
 class Home(webapp.RequestHandler):
@@ -36,10 +37,17 @@ class Home(webapp.RequestHandler):
       self.response.out.write("<a href='/oauth_logout'>OAuth Logout</a><br /><br />\n")
       if tweepy.API(auth).test():
         link=[]
-        temp=tweepy.API(auth).followers()
         user_name=users.get_current_user()
-        for i in temp:
-          link.append(i.screen_name)
+        #temp=tweepy.API(auth).followers()
+        num=tweepy.API(auth).get_user(user_name).followers_count
+        tmp0=tweepy.API(auth).followers(screen_name=user_name,cursor=-1)
+        for i in tmp0[0]:
+            link.append(i.screen_name)
+        while(tmp0[1][1]):
+            cur=tmp0[1][1]
+            tmp0=tweepy.API(auth).followers(screen_name=user_name,cursor=cur)
+            for i in tmp0[0]:
+                link.append(i.screen_name)
         find=[]
         tmp=db.GqlQuery('SELECT * FROM Friend WHERE name=:1','__%s'%user_name)
         global datatmp
@@ -52,6 +60,8 @@ class Home(webapp.RequestHandler):
         datatmp.link=link
         l0=len(link)
         l1=len(find)
+        #l0=tweepy.API(auth).get_user(user_name).followers_count;
+        #self.response.out.write(tweepy.API(auth).get_user(user_name).followers_count);
         self.response.out.write('ever %d followers now %d followers'%(l1,l0))
         find.sort()
         link.sort()
@@ -87,6 +97,9 @@ class Home(webapp.RequestHandler):
             <div><input type="submit" value="set"></div>
           </form>
         </body>
+        when you push the set button,it will record your followers's list
+        </br>
+        and show the difference from the record and the current list 
       </html>""")          
       else:
         self.response.out.write('OAuth Error.<br />\n')
