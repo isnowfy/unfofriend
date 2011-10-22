@@ -1,6 +1,3 @@
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp.util import run_wsgi_app
-from google.appengine.api import users
 from google.appengine.ext import db
 import tweepy
 
@@ -11,7 +8,6 @@ class Friend(db.Model):
 class Diff():
     def __init__(self,auth,user_name,mark):
         link=[]
-        num=tweepy.API(auth).get_user(user_name).followers_count
         tmp0=tweepy.API(auth).followers(screen_name=user_name,cursor=-1)
         for i in tmp0[0]:
             link.append(i.screen_name)
