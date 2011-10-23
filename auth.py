@@ -13,11 +13,11 @@ class OAuthTokenDB(db.Model):
     oakey = db.StringProperty()
     secret = db.StringProperty()
 
-def getauth():
-    if not users.get_current_user():return None
-    user_name = users.get_current_user()
+def getauth(user_name=users.get_current_user()):
+    if not user_name:return None
+    user_name=str(user_name)
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-    oauth_token = OAuthTokenDB.get_by_key_name(key_names='_%s' % user_name)
+    oauth_token = OAuthTokenDB.get_by_key_name(key_names=user_name)
     if oauth_token is None:return None
     auth.set_access_token(oauth_token.oakey, oauth_token.secret)
     return auth
@@ -30,34 +30,32 @@ class OAuth(webapp.RequestHandler):
         except tweepy.TweepError:
             self.response.out.write('Error! Failed to get request token.')
             return
-        user_name=users.get_current_user()
-        oauth_token = OAuthTokenDB(key_name='_%s' % user_name, oakey=auth.request_token.key, secret=auth.request_token.secret)
+        user_name=str(users.get_current_user())
+        oauth_token = OAuthTokenDB(key_name=user_name, oakey=auth.request_token.key, secret=auth.request_token.secret)
         oauth_token.put()
         self.redirect(redirect_url)
 
 class OAuthCallback(webapp.RequestHandler):
     def get(self):
-        self.response.out.write('here0')
         verifier = self.request.get('oauth_verifier')
-        self.response.out.write('here1')
         auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-        user_name=users.get_current_user()
-        oauth_token = OAuthTokenDB.get_by_key_name(key_names='_%s' % user_name)
+        user_name=str(users.get_current_user())
+        oauth_token = OAuthTokenDB.get_by_key_name(key_names=user_name)
         auth.set_request_token(oauth_token.oakey, oauth_token.secret)
         try:
             auth.get_access_token(verifier)
         except tweepy.TweepError:
             self.response.out.write('Error! Failed to get access token.')
             return
-        user_name = users.get_current_user()
-        oauth_token = OAuthTokenDB(key_name='_%s' % user_name, oakey=auth.access_token.key, secret=auth.access_token.secret)
+        user_name = str(users.get_current_user())
+        oauth_token = OAuthTokenDB(key_name=user_name, oakey=auth.access_token.key, secret=auth.access_token.secret)
         oauth_token.put()
         self.redirect('/')
 
 class OAuthLogout(webapp.RequestHandler):
     def get(self):
-        user_name = users.get_current_user()
-        oauth_token = OAuthTokenDB.get_by_key_name(key_names='_%s' % user_name)
+        user_name = str(users.get_current_user())
+        oauth_token = OAuthTokenDB.get_by_key_name(key_names=user_name)
         if oauth_token:
             db.delete(oauth_token)
         self.redirect('/')

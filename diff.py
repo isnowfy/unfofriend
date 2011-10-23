@@ -1,12 +1,33 @@
 from google.appengine.ext import db
+from google.appengine.api import users
+import time
 import tweepy
 
 class Friend(db.Model):
+    login_name = db.StringProperty()
     name = db.StringProperty()
     link = db.StringListProperty()
+    
+class Show(db.Model):
+    name=db.StringProperty()
+    fo=db.StringListProperty()
+    unfo=db.StringListProperty()
   
 class Diff():
-    def __init__(self,auth,user_name,mark):
+    def __init__(self,auth,user_name,mark,clear=0,login_name=users.get_current_user()):
+        login_name=str(login_name)
+        tmp=db.GqlQuery('SELECT * FROM Show WHERE name=:1',user_name)
+        showtmp=[]
+        for j in tmp:
+            showtmp=j
+        if(not showtmp):
+            showtmp=Show()
+        showtmp.name=user_name
+        if(clear):
+            showtmp.fo=[]
+            showtmp.unfo=[]
+            showtmp.put()
+            return
         link=[]
         tmp0=tweepy.API(auth).followers(screen_name=user_name,cursor=-1)
         for i in tmp0[0]:
@@ -17,15 +38,18 @@ class Diff():
             for i in tmp0[0]:
                 link.append(i.screen_name)
         find=[]
-        tmp=db.GqlQuery('SELECT * FROM Friend WHERE name=:1','__%s'%user_name)
+        tmp=db.GqlQuery('SELECT * FROM Friend WHERE name=:1',user_name)
+        datatmp=[]
         for j in tmp:
+            datatmp=j
             find=j.link
-        datatmp=Friend()
-        datatmp.name='__%s'%user_name
+        if(not datatmp):
+            datatmp=Friend()
+        datatmp.login_name=login_name    
+        datatmp.name=user_name
         datatmp.link=link
         l0=len(link)
         l1=len(find)
-        self.response.out.write('ever %d followers now %d followers'%(l1,l0))
         find.sort()
         link.sort()
         i0=0
@@ -53,3 +77,10 @@ class Diff():
             datatmp.put()
         self.fo=s1
         self.unfo=s2
+        nowtime=time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
+        for j in s1:
+            showtmp.fo.append(('%s  '%j)+nowtime)
+        for j in s2:
+            showtmp.unfo.append(('%s  '%j)+nowtime)
+        showtmp.put()
+        

@@ -5,6 +5,7 @@ from google.appengine.ext import db
 from auth import getauth,OAuth,OAuthCallback,OAuthLogout
 import tweepy
 import diff
+import refresh
 
 class MainPage(webapp.RequestHandler):
     def get(self):
@@ -17,39 +18,55 @@ class MainPage(webapp.RequestHandler):
 
 class Find(webapp.RequestHandler):
     def post(self):
-        diff.Diff(getauth(),users.get_current_user(),1);
+        diff.Diff(getauth(users.get_current_user()),tweepy.API(getauth(users.get_current_user())).me().screen_name,1);
+        self.redirect('/home')
+
+class Clear(webapp.RequestHandler):
+    def post(self):
+        diff.Diff(getauth(users.get_current_user()),tweepy.API(getauth(users.get_current_user())).me().screen_name,0,1);
         self.redirect('/home')
       
 class Home(webapp.RequestHandler):
-    def get(self):    
+    def get(self):  
+        self.response.out.write("<html><head></head><body>")  
         if users.get_current_user():
             url = users.create_logout_url(self.request.uri)
-            self.response.out.write("<a href='"+url+"'>Google Logout</a>\n")
+            self.response.out.write("<a href='"+url+"'>%s Google Logout</a><br /><br />\n"%(users.get_current_user()))
         else:
             self.redirect('/')
-        auth=getauth()
-        user_name=users.get_current_user()
+        auth=getauth(users.get_current_user())
         if auth:
-            self.response.out.write("<a href='/oauth_logout'>OAuth Logout</a><br /><br />\n")
+            user_name=tweepy.API(auth).me().screen_name
+            self.response.out.write("<a href='/oauth_logout'>%s OAuth Logout</a><br /><br />\n"%user_name)
             if tweepy.API(auth).test():
-                tmp=diff.Diff(auth,user_name,0);
-                self.response.out.write('<p><font color="#FF0000">new %d unfo:</font></p>'%len(tmp.unfo))
-                for i in tmp.unfo:
-                    self.response.out.write(i+'</br>')
-                self.response.out.write('<p><font color="#FF0000">new %d fo:</font></p>'%len(tmp.fo))
                 self.response.out.write("""
-                <form action="/set" method="post">
-                <div><input type="submit" value="set"></div>
-                </form>
-                </body>
-                when you push the set button,it will record your followers's list
-                </br>
-                and show the difference from the record and the current list 
-                </html>""")          
+                <table>
+                    <td>
+                        <form action="/set" method="post">
+                        <div><input type="submit" value="refresh"></div>
+                        </form>
+                    </td><td>
+                        <form action="/clear" method="post">
+                        <div><input type="submit" value="clear"></div>
+                        </form>
+                    </td>
+                </table>""") 
+                diff.Diff(auth,user_name,1);
+                tmp=db.GqlQuery('SELECT * FROM Show WHERE name=:1',user_name)
+                datatmp=[]
+                for j in tmp:
+                    datatmp=j
+                self.response.out.write('<p><font color="#FF0000">new unfo:</font></p>')
+                for i in datatmp.unfo:
+                    self.response.out.write(i+'</br>')
+                self.response.out.write('<p><font color="#FF0000">new fo:</font></p>')
+                for i in datatmp.fo:
+                    self.response.out.write(i+'</br>')       
             else:
                 self.response.out.write('OAuth Error.<br />\n')
         else:
             self.response.out.write("<a href='/auth'>OAuth Login</a>\n")
+        self.response.out.write("</body></html>")   
 
 
 application = webapp.WSGIApplication([
@@ -58,7 +75,9 @@ application = webapp.WSGIApplication([
   ('/auth', OAuth),
   ('/callback', OAuthCallback),
   ('/oauth_logout', OAuthLogout),
-  ('/set', Find)
+  ('/set', Find),
+  ('/clear', Clear),
+  ('/refresh', refresh.Refresh)
 ], debug=True)
 
 def main():
