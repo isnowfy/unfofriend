@@ -18,12 +18,14 @@ class MainPage(webapp.RequestHandler):
 
 class Find(webapp.RequestHandler):
     def post(self):
-        diff.Diff(getauth(users.get_current_user()),tweepy.API(getauth(users.get_current_user())).me().screen_name,1);
+        name=users.get_current_user()
+        diff.Diff(getauth(name),tweepy.API(getauth(name)).me().screen_name,1,0,name);
         self.redirect('/home')
 
 class Clear(webapp.RequestHandler):
     def post(self):
-        diff.Diff(getauth(users.get_current_user()),tweepy.API(getauth(users.get_current_user())).me().screen_name,0,1);
+        name=users.get_current_user()
+        diff.Diff(getauth(name),tweepy.API(getauth(name)).me().screen_name,1,1,name);
         self.redirect('/home')
       
 class Home(webapp.RequestHandler):
@@ -51,7 +53,7 @@ class Home(webapp.RequestHandler):
                         </form>
                     </td>
                 </table>""") 
-                diff.Diff(auth,user_name,1);
+                diff.Diff(auth,user_name,1,0,users.get_current_user());
                 tmp=db.GqlQuery('SELECT * FROM Show WHERE name=:1',user_name)
                 datatmp=[]
                 for j in tmp:
