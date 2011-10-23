@@ -59,9 +59,11 @@ class Home(webapp.RequestHandler):
                 for j in tmp:
                     datatmp=j
                 self.response.out.write('<p><font color="#FF0000">new unfo:</font></p>')
+                datatmp.unfo.reverse()
                 for i in datatmp.unfo:
                     self.response.out.write(i+'</br>')
                 self.response.out.write('<p><font color="#FF0000">new fo:</font></p>')
+                datatmp.fo.reverse()
                 for i in datatmp.fo:
                     self.response.out.write(i+'</br>')       
             else:
