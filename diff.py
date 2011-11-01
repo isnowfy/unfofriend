@@ -95,5 +95,5 @@ class Diff():
             body=""
             for j in self.unfo:
                 body+="<a href=\"http://twitter.com/"+j+"\">"+j+"</a>  "+nowtime+"  <br />\n"
-            mail.send_mail("isnowfy@gmail.com",tmp.email,"you have new unfo on twitter",body)
+            mail.send_mail("a3214668848@gmail.com",tmp.email,"you have new unfo on twitter",body)
         
