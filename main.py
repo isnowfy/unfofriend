@@ -2,6 +2,7 @@ from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
 from google.appengine.api import users
 from google.appengine.ext import db
+from google.appengine.api import mail
 from auth import getauth,OAuth,OAuthCallback,OAuthLogout
 import tweepy
 import diff
@@ -16,11 +17,18 @@ class MainPage(webapp.RequestHandler):
             self.redirect('/home')
       
 
-class Find(webapp.RequestHandler):
+class MailSave(webapp.RequestHandler):
     def post(self):
-        name=users.get_current_user()
-        diff.Diff(getauth(name),tweepy.API(getauth(name)).me().screen_name,1,0,name);
-        self.redirect('/home')
+        user_address=self.request.get("email")
+        if not mail.is_email_valid(user_address):
+            self.response.out.write("email address invalid!!!")
+        else:
+            name=str(users.get_current_user())
+            showtmp=diff.getemail(name)
+            showtmp.name=name
+            showtmp.email=user_address
+            showtmp.put()
+            self.redirect('/home')
 
 class Clear(webapp.RequestHandler):
     def post(self):
@@ -30,30 +38,34 @@ class Clear(webapp.RequestHandler):
       
 class Home(webapp.RequestHandler):
     def get(self):  
+        login_name=str(users.get_current_user())
         self.response.out.write("<html><head></head><body>")  
-        if users.get_current_user():
+        if login_name:
             url = users.create_logout_url(self.request.uri)
-            self.response.out.write("<a href='"+url+"'>%s Google Logout</a><br /><br />\n"%(users.get_current_user()))
+            self.response.out.write("<a href='"+url+"'>%s Google Logout</a><br /><br />\n"%(login_name))
         else:
             self.redirect('/')
-        auth=getauth(users.get_current_user())
+        auth=getauth(login_name)
         if auth:
             user_name=tweepy.API(auth).me().screen_name
+            showtmp=diff.getemail(login_name).email
             self.response.out.write("<a href='/oauth_logout'>%s OAuth Logout</a><br /><br />\n"%user_name)
             if tweepy.API(auth).test():
                 self.response.out.write("""
+                <font color="#FF0000">if you put your email below,when you get new unfo i will send email to you</font>
                 <table>
-                    <td>
+                    <tr>
                         <form action="/set" method="post">
-                        <div><input type="submit" value="refresh"></div>
+                        <td><input type="text" name="email" size="20" value="%s"></td>
+                        <td><input type="submit" value="save the email"></td>
                         </form>
-                    </td><td>
+                    </tr><br /><tr>
                         <form action="/clear" method="post">
-                        <div><input type="submit" value="clear"></div>
+                        <div><input type="submit" value="clear all the data"></div>
                         </form>
-                    </td>
-                </table>""") 
-                diff.Diff(auth,user_name,1,0,users.get_current_user());
+                    </tr>
+                </table>"""%showtmp) 
+                diff.Diff(auth,user_name,1,0,login_name);
                 tmp=db.GqlQuery('SELECT * FROM Show WHERE name=:1',user_name)
                 datatmp=[]
                 for j in tmp:
@@ -79,7 +91,7 @@ application = webapp.WSGIApplication([
   ('/auth', OAuth),
   ('/callback', OAuthCallback),
   ('/oauth_logout', OAuthLogout),
-  ('/set', Find),
+  ('/set', MailSave),
   ('/clear', Clear),
   ('/refresh', refresh.Refresh)
 ], debug=True)

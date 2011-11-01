@@ -1,5 +1,6 @@
 from google.appengine.ext import db
 from google.appengine.api import users
+from google.appengine.api import mail
 import time
 import tweepy
 
@@ -12,14 +13,23 @@ class Show(db.Model):
     name=db.StringProperty()
     fo=db.StringListProperty()
     unfo=db.StringListProperty()
+    
+class Email(db.Model):
+    name=db.StringProperty()
+    email=db.StringProperty()
+    
+def getemail(name):
+    tmp=db.GqlQuery('SELECT * FROM Email WHERE name=:1',name)
+    showtmp=tmp.get()
+    if not showtmp:
+        showtmp=Email()
+    return showtmp
   
 class Diff():
     def __init__(self,auth,user_name,mark,clear=0,login_name=users.get_current_user()):
         login_name=str(login_name)
         tmp=db.GqlQuery('SELECT * FROM Show WHERE name=:1',user_name)
-        showtmp=[]
-        for j in tmp:
-            showtmp=j
+        showtmp=tmp.get()
         if(not showtmp):
             showtmp=Show()
         showtmp.name=user_name
@@ -37,12 +47,9 @@ class Diff():
             tmp0=tweepy.API(auth).followers(screen_name=user_name,cursor=cur)
             for i in tmp0[0]:
                 link.append(i.screen_name)
-        find=[]
         tmp=db.GqlQuery('SELECT * FROM Friend WHERE name=:1',user_name)
-        datatmp=[]
-        for j in tmp:
-            datatmp=j
-            find=j.link
+        datatmp=tmp.get()
+        find=datatmp.link
         if(not datatmp):
             datatmp=Friend()
         datatmp.login_name=login_name    
@@ -83,4 +90,10 @@ class Diff():
         for j in s2:
             showtmp.unfo.append(('%s  '%j)+nowtime)
         showtmp.put()
+        tmp=getemail(login_name)
+        if(len(self.unfo)>0 and tmp.email):
+            body=""
+            for j in self.unfo:
+                body+="<a href=\"http://twitter.com/"+j+"\">"+j+"</a>  "+nowtime+"  <br />\n"
+            mail.send_mail("isnowfy@gmail.com",tmp.email,"you have new unfo on twitter",body)
         

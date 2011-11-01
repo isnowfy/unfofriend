@@ -7,4 +7,8 @@ class Refresh(webapp.RequestHandler):
     def get(self): 
         tmp=db.GqlQuery('SELECT * FROM Friend')
         for i in tmp:
-            diff.Diff(getauth(i.login_name),i.name,1,0,i.login_name);
+            try:
+                diff.Diff(getauth(i.login_name),i.name,1,0,i.login_name)
+            except:
+                print("%s error"%i.login_name)
+                
