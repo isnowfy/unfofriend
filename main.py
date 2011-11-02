@@ -27,6 +27,9 @@ class MailSave(webapp.RequestHandler):
             showtmp=diff.getemail(name)
             showtmp.name=name
             showtmp.email=user_address
+            showtmp.fo=False
+            if self.request.get("fo"):
+                showtmp.fo=True
             showtmp.put()
             self.redirect('/')
 
@@ -48,39 +51,43 @@ class Home(webapp.RequestHandler):
         auth=getauth(users.get_current_user())
         if auth:
             user_name=tweepy.API(auth).me().screen_name
-            showtmp=diff.getemail(login_name).email
+            showtmp=diff.getemail(login_name)
             self.response.out.write("<a href='/oauth_logout'>%s OAuth Logout</a><br /><br />\n"%user_name)
+            booltmp=""
+            if showtmp.fo:
+                booltmp="checked=\"true\""
             if tweepy.API(auth).test():
                 self.response.out.write("""
                 <font color="#FF0000">if you put your email below,when you get new unfo i will send email to you</font>
                 <table>
                     <tr>
                         <form action="/set" method="post"><table>
-                        <td><input type="text" name="email" size="20" value="%s"></td>
-                        <td><input type="submit" value="save the email"></td>
+                        <div><input type="text" name="email" size="20" value="%s"></div>
+                        <div><input name="fo" type="checkbox" %s>new follower mail notify</div>
+                        <div><input type="submit" value="save change"></div>
                         </table></form>
                     </tr><br /><tr>
                         <form action="/clear" method="post">
                         <div><input type="submit" value="clear all the data"></div>
                         </form>
                     </tr>
-                </table>"""%showtmp) 
+                </table>"""%(showtmp.email,booltmp)) 
                 diff.Diff(auth,user_name,1,0,login_name);
                 tmp=db.GqlQuery('SELECT * FROM Show WHERE name=:1',user_name)
-                datatmp=[]
-                for j in tmp:
-                    datatmp=j
+                datatmp=tmp.get()
                 self.response.out.write('<p><font color="#FF0000">new unfo:</font></p>')
                 self.response.out.write("<table>")
                 datatmp.unfo.reverse()
                 for i in datatmp.unfo:
-                    self.response.out.write(i+'</br>')
+                    s=i.split("@")
+                    self.response.out.write("<tr><td><a href=\"http://twitter.com/"+s[0]+"\">"+s[0]+"</a></td><td>"+s[1]+"</td></tr>")
                 self.response.out.write("</table>")
                 self.response.out.write('<p><font color="#FF0000">new fo:</font></p>')
                 self.response.out.write("<table>")
                 datatmp.fo.reverse()
                 for i in datatmp.fo:
-                    self.response.out.write(i+'</br>')      
+                    s=i.split("@")
+                    self.response.out.write("<tr><td><a href=\"http://twitter.com/"+s[0]+"\">"+s[0]+"</a></td><td>"+s[1]+"</td></tr>")
                 self.response.out.write("</table>") 
             else:
                 self.response.out.write('OAuth Error.<br />\n')

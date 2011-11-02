@@ -5,9 +5,9 @@ import time
 import tweepy
 
 class Friend(db.Model):
-    login_name = db.StringProperty()
-    name = db.StringProperty()
-    link = db.StringListProperty()
+    login_name=db.StringProperty()
+    name=db.StringProperty()
+    link=db.StringListProperty()
     
 class Show(db.Model):
     name=db.StringProperty()
@@ -17,6 +17,7 @@ class Show(db.Model):
 class Email(db.Model):
     name=db.StringProperty()
     email=db.StringProperty()
+    fo=db.BooleanProperty()
     
 def getemail(name):
     tmp=db.GqlQuery('SELECT * FROM Email WHERE name=:1',name)
@@ -86,9 +87,9 @@ class Diff():
         self.unfo=s2
         nowtime=time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
         for j in s1:
-            showtmp.fo.append("<tr><td><a href=\"http://twitter.com/"+j+"\">"+j+"</a></td><td>"+nowtime+"</td></tr>")
+            showtmp.fo.append(j+"@"+nowtime)
         for j in s2:
-            showtmp.unfo.append("<tr><td><a href=\"http://twitter.com/"+j+"\">"+j+"</a></td><td>"+nowtime+"</td></tr>")
+            showtmp.unfo.append(j+"@"+nowtime)
         showtmp.put()
         tmp=getemail(login_name)
         if(len(self.unfo)>0 and tmp.email):
@@ -107,6 +108,24 @@ class Diff():
             </div></body></html>
             """
             message=mail.EmailMessage(sender="a3214668848@gmail.com",subject="unfofriend.appspot.com:%s unfollowed you"%somebody,to=tmp.email)
+            message.html=body
+            message.send()
+        if(len(self.fo)>0 and tmp.email and tmp.fo):
+            somebody=""
+            body="<html><head></head><body><div>Hi %s,<br><br> the people below start to follow you<br><table>"%login_name
+            for j in self.fo:
+                somebody=j
+                body+="<tr><td><a href=\"http://twitter.com/"+j+"\">"+j+"</a></td><td>"+nowtime+"</td></tr>"
+            body+=""" 
+            </table><br><br>
+            Your follow/unfollow history here:<a href="https://unfofriend.appspot.com/home">https://unfofriend.appspot.com/home</a>
+            <br><br>
+            <span><font color="#888888"><br>--<br>
+            Powerd by <a href="https://unfofriend.appspot.com" target="_blank">unfofriend.appspot.com</a><br>
+            </font></span>
+            </div></body></html>
+            """
+            message=mail.EmailMessage(sender="a3214668848@gmail.com",subject="unfofriend.appspot.com:%s followed you"%somebody,to=tmp.email)
             message.html=body
             message.send()
         
