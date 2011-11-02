@@ -28,24 +28,24 @@ class MailSave(webapp.RequestHandler):
             showtmp.name=name
             showtmp.email=user_address
             showtmp.put()
-            self.redirect('/home')
+            self.redirect('/')
 
 class Clear(webapp.RequestHandler):
     def post(self):
         name=users.get_current_user()
         diff.Diff(getauth(name),tweepy.API(getauth(name)).me().screen_name,1,1,name);
-        self.redirect('/home')
+        self.redirect('/')
       
 class Home(webapp.RequestHandler):
     def get(self):  
         login_name=str(users.get_current_user())
         self.response.out.write("<html><head></head><body>")  
-        if login_name:
+        if users.get_current_user():
             url = users.create_logout_url(self.request.uri)
             self.response.out.write("<a href='"+url+"'>%s Google Logout</a><br /><br />\n"%(login_name))
         else:
             self.redirect('/')
-        auth=getauth(login_name)
+        auth=getauth(users.get_current_user())
         if auth:
             user_name=tweepy.API(auth).me().screen_name
             showtmp=diff.getemail(login_name).email
@@ -55,10 +55,10 @@ class Home(webapp.RequestHandler):
                 <font color="#FF0000">if you put your email below,when you get new unfo i will send email to you</font>
                 <table>
                     <tr>
-                        <form action="/set" method="post">
+                        <form action="/set" method="post"><table>
                         <td><input type="text" name="email" size="20" value="%s"></td>
                         <td><input type="submit" value="save the email"></td>
-                        </form>
+                        </table></form>
                     </tr><br /><tr>
                         <form action="/clear" method="post">
                         <div><input type="submit" value="clear all the data"></div>
@@ -71,13 +71,17 @@ class Home(webapp.RequestHandler):
                 for j in tmp:
                     datatmp=j
                 self.response.out.write('<p><font color="#FF0000">new unfo:</font></p>')
+                self.response.out.write("<table>")
                 datatmp.unfo.reverse()
                 for i in datatmp.unfo:
                     self.response.out.write(i+'</br>')
+                self.response.out.write("</table>")
                 self.response.out.write('<p><font color="#FF0000">new fo:</font></p>')
+                self.response.out.write("<table>")
                 datatmp.fo.reverse()
                 for i in datatmp.fo:
-                    self.response.out.write(i+'</br>')       
+                    self.response.out.write(i+'</br>')      
+                self.response.out.write("</table>") 
             else:
                 self.response.out.write('OAuth Error.<br />\n')
         else:

@@ -86,14 +86,27 @@ class Diff():
         self.unfo=s2
         nowtime=time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
         for j in s1:
-            showtmp.fo.append(('%s  '%j)+nowtime)
+            showtmp.fo.append("<tr><td><a href=\"http://twitter.com/"+j+"\">"+j+"</a></td><td>"+nowtime+"</td></tr>")
         for j in s2:
-            showtmp.unfo.append(('%s  '%j)+nowtime)
+            showtmp.unfo.append("<tr><td><a href=\"http://twitter.com/"+j+"\">"+j+"</a></td><td>"+nowtime+"</td></tr>")
         showtmp.put()
         tmp=getemail(login_name)
         if(len(self.unfo)>0 and tmp.email):
-            body=""
+            somebody=""
+            body="<html><head></head><body><div>Hi %s,<br><br> the people below are no longer following you<br><table>"%login_name
             for j in self.unfo:
-                body+="<a href=\"http://twitter.com/"+j+"\">"+j+"</a>  "+nowtime+"  <br />\n"
-            mail.send_mail("a3214668848@gmail.com",tmp.email,"you have new unfo on twitter",body)
+                somebody=j
+                body+="<tr><td><a href=\"http://twitter.com/"+j+"\">"+j+"</a></td><td>"+nowtime+"</td></tr>"
+            body+=""" 
+            </table><br><br>
+            Your follow/unfollow history here:<a href="https://unfofriend.appspot.com/home">https://unfofriend.appspot.com/home</a>
+            <br><br>
+            <span><font color="#888888"><br>--<br>
+            Powerd by <a href="https://unfofriend.appspot.com" target="_blank">unfofriend.appspot.com</a><br>
+            </font></span>
+            </div></body></html>
+            """
+            message=mail.EmailMessage(sender="a3214668848@gmail.com",subject="unfofriend.appspot.com:%s unfollowed you"%somebody,to=tmp.email)
+            message.html=body
+            message.send()
         
