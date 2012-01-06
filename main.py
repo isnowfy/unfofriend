@@ -28,6 +28,9 @@ class MailSave(webapp.RequestHandler):
             showtmp.name=name
             showtmp.email=user_address
             showtmp.fo=False
+            showtmp.timezone=0
+            if self.request.get("timezone"):
+                showtmp.timezone=int(self.request.get("timezone"))
             if self.request.get("fo"):
                 showtmp.fo=True
             showtmp.put()
@@ -38,11 +41,19 @@ class Clear(webapp.RequestHandler):
         name=users.get_current_user()
         diff.Diff(getauth(name),tweepy.API(getauth(name)).me().screen_name,1,1,name);
         self.redirect('/')
+        
+class About(webapp.RequestHandler):
+    def get(self):
+        out="""<html><head><link rel="shortcut" href="/favicon.ico" /></head><body>
+        this is an auto twitter unfo notifier,that is we can send you email when you have unfollower
+        </br> author:<a href="http://www.isnowfy.com">isnowfy</a>
+        </body></html>"""
+        self.response.out.write(out)
       
 class Home(webapp.RequestHandler):
     def get(self):  
         login_name=str(users.get_current_user())
-        self.response.out.write("<html><head></head><body>")  
+        self.response.out.write("<html><head><link rel=\"shortcut\" href=\"/favicon.ico\" /></head><body>")  
         if users.get_current_user():
             url = users.create_logout_url(self.request.uri)
             self.response.out.write("<a href='"+url+"'>%s Google Logout</a><br /><br />\n"%(login_name))
@@ -56,14 +67,25 @@ class Home(webapp.RequestHandler):
             booltmp=""
             if showtmp.fo:
                 booltmp="checked=\"true\""
+            delta=0
+            if showtmp.timezone:
+                delta=showtmp.timezone
             if tweepy.API(auth).test():
+                timeout=""
+                for i in range(25):
+                    if i-12!=delta:
+                        timeout+="<option value =\"%d\">%d</option>"%(i-12,i-12)
+                    else:timeout+="<option value =\"%d\" selected=\"selected\">%d</option>"%(i-12,i-12)
                 self.response.out.write("""
                 <font color="#FF0000">if you put your email below,when you get new unfo i will send email to you</font>
                 <table>
                     <tr>
                         <form action="/set" method="post"><table>
                         <div><input type="text" name="email" size="20" value="%s"></div>
-                        <div><input name="fo" type="checkbox" %s>new follower mail notify</div>
+                        <div><input name="fo" type="checkbox" %s> new follower mail notify</div>
+                        <div><select name="timezone">"""%(showtmp.email,booltmp)+                                            
+                        timeout+"""                             
+                        </select> timezone</div>
                         <div><input type="submit" value="save change"></div>
                         </table></form>
                     </tr><br /><tr>
@@ -71,7 +93,7 @@ class Home(webapp.RequestHandler):
                         <div><input type="submit" value="clear all the data"></div>
                         </form>
                     </tr>
-                </table>"""%(showtmp.email,booltmp)) 
+                </table>""") 
                 diff.Diff(auth,user_name,1,0,login_name);
                 tmp=db.GqlQuery('SELECT * FROM Show WHERE name=:1',user_name)
                 datatmp=tmp.get()
@@ -104,7 +126,8 @@ application = webapp.WSGIApplication([
   ('/oauth_logout', OAuthLogout),
   ('/set', MailSave),
   ('/clear', Clear),
-  ('/refresh', refresh.Refresh)
+  ('/refresh', refresh.Refresh),
+  ('/about',About)
 ], debug=True)
 
 def main():

@@ -16,6 +16,7 @@ class Show(db.Model):
     
 class Email(db.Model):
     name=db.StringProperty()
+    timezone=db.IntegerProperty()
     email=db.StringProperty()
     fo=db.BooleanProperty()
     
@@ -50,9 +51,9 @@ class Diff():
                 link.append(i.screen_name)
         tmp=db.GqlQuery('SELECT * FROM Friend WHERE name=:1',user_name)
         datatmp=tmp.get()
-        find=datatmp.link
         if(not datatmp):
             datatmp=Friend()
+        find=datatmp.link
         datatmp.login_name=login_name    
         datatmp.name=user_name
         datatmp.link=link
@@ -85,13 +86,16 @@ class Diff():
             datatmp.put()
         self.fo=s1
         self.unfo=s2
-        nowtime=time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
+        tmp=getemail(login_name)
+        delta=0
+        if tmp.timezone:
+            delta=tmp.timezone
+        nowtime=time.strftime('%Y-%m-%d %H:%M:%S',time.gmtime(time.time()+delta*3600))
         for j in s1:
             showtmp.fo.append(j+"@"+nowtime)
         for j in s2:
             showtmp.unfo.append(j+"@"+nowtime)
         showtmp.put()
-        tmp=getemail(login_name)
         if(len(self.unfo)>0 and tmp.email):
             somebody=""
             body="<html><head></head><body><div>Hi %s,<br><br> the people below are no longer following you<br><table>"%login_name
